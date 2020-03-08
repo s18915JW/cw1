@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -9,24 +10,46 @@ namespace cw1
 	{
 		public static async Task Main(string[] args)
 		{
-			// Console.WriteLine("Hello World!");
-
-			var url = args.Length > 0 ? args[0] : "https://www.pja.edu.pl/";
-			var client = new HttpClient();
-			var res = await client.GetAsync(url);
-
-			if (res.IsSuccessStatusCode)
+			if (args[0] == null)
+				throw new ArgumentNullException();
+			else if (CheckURL(args[0]))
+				throw new ArgumentException();
+			else
 			{
-				var content = await res.Content.ReadAsStringAsync();
-				var regex = new Regex("[a-z]+[a-z0-9]*@[a-z0-9]+\\.[a-z]+",RegexOptions.IgnoreCase);
 
-				var matches = regex.Matches(content);
+				var url = args[0];
+				var client = new HttpClient();
+				var res = await client.GetAsync(url);
 
-				foreach (var item in matches)
+				client.Dispose();
+
+				if (res.IsSuccessStatusCode)
 				{
-					Console.WriteLine(item.ToString());
+					var content = await res.Content.ReadAsStringAsync();
+					var regex = new Regex("[a-z]+[a-z0-9]*@[a-z0-9]+\\.[a-z]+", RegexOptions.IgnoreCase);
+
+					var matches = regex.Matches(content);
+					HashSet<string> set = new HashSet<string>();
+
+					if (matches.Count > 0)
+					{
+						foreach (var match in matches)
+							set.Add(match.ToString());
+
+						foreach (var uniqueAddress in set)
+							Console.WriteLine(uniqueAddress);
+					}
+					else Console.WriteLine("Nie znaleziono adresów email");
 				}
+				else Console.WriteLine("Błąd w czasie pobierania strony");
 			}
 		}
+		public static bool CheckURL(string url)
+		{
+			Uri uriResult;
+			return Uri.TryCreate(url, UriKind.Absolute, out uriResult) &&
+				(uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+		}
 	}
+
 }
